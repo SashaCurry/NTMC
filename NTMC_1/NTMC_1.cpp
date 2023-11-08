@@ -44,7 +44,7 @@ int binaryEuclid(int a, int b) {
 
 
 //Расширенный алгоритм Евклида
-pair <int, int> advancedEuclid (int a, int b) {
+pair <int, int> advancedEuclid(int a, int b) {
 	if (a < 0 || b < 0)
 		throw string{ "Выполнение невозможно: a < 0 или b < 0" };
 
@@ -110,7 +110,7 @@ void mainEuclid() {
 			try {
 				pair <int, int> xy = advancedEuclid(a, b);
 				cout << "НОД(" << a << ", " << b << ") = " << a << "*" << xy.first << " + " << b << "*" <<
-					    xy.second << " = " << a * xy.first + b * xy.second;
+					xy.second << " = " << a * xy.first + b * xy.second;
 			}
 			catch (string& error_message) {
 				cout << error_message;
@@ -257,13 +257,13 @@ void mainSLC() {
 
 /////////////////////////////////////////////////////////////////////////МЕТОД ГАУССА/////////////////////////////////////////////////////////////////////////
 //Проверка, имеет ли решения СЛУ
-bool haveSolution(vector <vector <int>> matrix) {
+bool haveSolution(vector <vector <pair <int, short>>> matrix) {
 	for (int i = 0; i < matrix.size(); i++) {
 		bool flag = true;
 		for (int j = 0; j < matrix[i].size(); j++) {
-			if (j == matrix[i].size() - 1 && matrix[i][j] == 1 && flag)
+			if (j == matrix[i].size() - 1 && matrix[i][j].first == 1 && flag)
 				return false;
-			else if (matrix[i][j] != 0)
+			else if (matrix[i][j].first != 0)
 				break;
 		}
 	}
@@ -272,33 +272,33 @@ bool haveSolution(vector <vector <int>> matrix) {
 
 
 //Умножение строки на число
-vector <int> multRawtoNum(vector <int> raw, int num, int field) {
-	vector <int> res;
+vector <pair <int, short>> multRawtoNum(vector <pair <int, short>> raw, int num, int field) {
+	vector <pair <int, short>> res;
 	for (int i = 0; i < raw.size(); i++) {
-		int x = (raw[i] * num) % field;
-		res.push_back(x >= 0 ? x : x + field);
+		int x = (raw[i].first * num) % field;
+		res.push_back(x >= 0 ? make_pair(x, raw[i].second) : make_pair(x + field, raw[i].second));
 	}
 	return res;
 }
 
 
 //Сложение строк
-vector <int> addRaws(vector <int> a, vector <int> b, int field) {
-	vector <int> res;
+vector <pair <int, short>> addRaws(vector <pair <int, short>> a, vector <pair <int, short>> b, int field) {
+	vector <pair <int, short>> res;
 	for (int i = 0; i < a.size(); i++) {
-		int x = (a[i] + b[i]) % field;
-		res.push_back(x >= 0 ? x : x + field);
+		int x = (a[i].first + b[i].first) % field;
+		res.push_back(x >= 0 ? make_pair(x, a[i].second) : make_pair(x + field, a[i].second));
 	}
 	return res;
 }
 
 
 //Удаление нулевых строк
-void delZeroRaws(vector <vector <int>>& matrix) {
+void delZeroRaws(vector <vector <pair <int, short>>>& matrix) {
 	for (int i = 0; i < matrix.size(); i++) {
 		bool flag = true;
 		for (int j = 0; j < matrix[i].size(); j++)
-			if (matrix[i][j] != 0) {
+			if (matrix[i][j].first != 0) {
 				flag = false;
 				break;
 			}
@@ -311,9 +311,9 @@ void delZeroRaws(vector <vector <int>>& matrix) {
 
 
 //Меняем столбцы, если на главной диагонали 0
-void swapColms(vector <vector <int>>& matrix, int colm) {
+void swapColms(vector <vector <pair <int, short>>>& matrix, int colm) {
 	for (int i = colm + 1; i < matrix[colm].size() - 1; i++)
-		if (matrix[colm][i] != 0) {
+		if (matrix[colm][i].first != 0) {
 			for (int j = 0; j < matrix.size(); j++)
 				swap(matrix[j][colm], matrix[j][i]);
 			return;
@@ -330,96 +330,64 @@ void gauss() {
 	cout << "Количество строк и столбцов матрицы системы: ";
 	int raws, cols;
 	cin >> raws >> cols;
-	vector <vector <int>> matrix(raws);
+	vector <vector <pair <int, short>>> matrix(raws);
 	cout << "Матрица системы: \n";
 	for (int i = 0; i < raws; i++)
 		for (int j = 0; j < cols; j++) {
 			int x;
 			cin >> x;
-			matrix[i].push_back(x);
+			matrix[i].push_back(make_pair(x, j + 1));
 		}
 
-	for (int i = 0; i < matrix.size(); i++) {
-		if (matrix[i][i] == 0)
+	for (int i = 0; i < matrix.size() && i < matrix[0].size(); i++) {
+		if (matrix[i][i].first == 0)
 			swapColms(matrix, i);
 
-		int revEl = advancedEuclid(matrix[i][i], field).first;
+		int revEl = advancedEuclid(matrix[i][i].first, field).first;
 		matrix[i] = multRawtoNum(matrix[i], revEl, field);
 		for (int j = 0; j < matrix.size(); j++) {
 			if (i == j)
 				continue;
-			matrix[j] = addRaws(matrix[j], multRawtoNum(matrix[i], -matrix[j][i], field), field);
-		}	
+			matrix[j] = addRaws(matrix[j], multRawtoNum(matrix[i], -matrix[j][i].first, field), field);
+		}
 	}
-	delZeroRaws(matrix);
 
-	if (!haveSolution) {
-		cout << "Решений нет! \n";
-		return;
-	}
+	delZeroRaws(matrix);
+	for (short i = 0; i < matrix.size(); i++)
+		if (matrix[i][i].first == 0)
+			swapColms(matrix, i);
 
 	cout << "\nРазрешённое решение исходной системы: \n";
 	for (int i = 0; i < matrix.size(); i++) {
 		for (int j = 0; j < matrix[i].size(); j++) {
 			if (j == matrix[i].size() - 2)
-				cout << matrix[i][j] << "x" << j + 1 << " = ";
+				cout << matrix[i][j].first << "x" << matrix[i][j].second << " = ";
 			else if (j == matrix[i].size() - 1)
-				cout << matrix[i][j] << endl;
+				cout << matrix[i][j].first << endl;
 			else
-				cout << matrix[i][j] << "x" << j + 1 << " + ";
+				cout << matrix[i][j].first << "x" << matrix[i][j].second << " + ";
 		}
+	}
+
+	if (!haveSolution(matrix)) {
+		cout << "\nРешений нет! \n";
+		return;
 	}
 
 	cout << "\nОбщее решение исходной системы: \n";
 	for (int i = 0; i < matrix.size(); i++) {
-		cout << "x" << i + 1 << " = ";
+		cout << "x" << matrix[i][i].second << " = ";
 		for (int j = i + 1; j < matrix[i].size() - 1; j++) {
-			if (matrix[i][j] == 0)
+			if (matrix[i][j].first == 0)
 				continue;
-			matrix[i][j] = -matrix[i][j] + field;
-			cout << matrix[i][j] << "x" << j + 1 << " + ";
+			matrix[i][j].first = -matrix[i][j].first + field;
+			cout << matrix[i][j].first << "x" << matrix[i][j].second << " + ";
 		}
-		cout << matrix[i].back() << endl;
+		cout << matrix[i].back().first << endl;
 	}
-
-	cout << "\nСвободные неизвестные ";
-	raws = matrix.size();
-	int numVals = 0;
-	for (int i = raws; i < matrix[0].size() - 1; i++) {
-		numVals++;
-		if (i == matrix[0].size() - 2)
-			cout << "x" << i + 1 << ": ";
-		else
-			cout << "x" << i + 1 << ", ";
-	}
-	vector <int> vals;
-	for (int i = 0; i < numVals; i++) {
-		int x;
-		cin >> x;
-		vals.push_back(x);
-	}
-
-	vector <int> res;
-	for (int i = 0; i < matrix.size(); i++) {
-		int ans = 0;
-		for (int j = raws; j < matrix[i].size() - 1; j++)
-			ans += vals[j - raws] * matrix[i][j];
-		ans += matrix[i].back();
-		res.push_back(ans);
-	}
-	res.insert(res.end(), vals.begin(), vals.end());
-
-	cout << "Частное решение: (";
-	for (int i = 0; i < res.size(); i++) {
-		if (i == res.size() - 1)
-			cout << res[i] << ")";
-		else
-			cout << res[i] << ", ";
-	}
-	cout << endl;
 }
 
- 
+
 int main() {
 	setlocale(LC_ALL, "ru");
 	for (;;) {
